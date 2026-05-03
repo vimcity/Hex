@@ -161,6 +161,43 @@ struct HotKeyProcessorTests {
         )
     }
 
+    @Test
+    func pressAndHold_matchesEitherControlSideForKeyHotkey() throws {
+        runScenario(
+            hotkey: HotKey(key: .t, modifiers: [.control]),
+            steps: [
+                ScenarioStep(time: 0.0, key: .t, modifiers: [.control.with(side: .right)], expectedOutput: .startRecording, expectedIsMatched: true),
+                ScenarioStep(time: 0.2, key: nil, modifiers: [.control.with(side: .right)], expectedOutput: .stopRecording, expectedIsMatched: false),
+            ]
+        )
+    }
+
+    @Test
+    func singleTapLock_locksOnFirstRelease_standard() throws {
+        runScenario(
+            hotkey: HotKey(key: .t, modifiers: [.control]),
+            singleTapLockEnabled: true,
+            steps: [
+                ScenarioStep(time: 0.0, key: .t, modifiers: [.control], expectedOutput: .startRecording, expectedIsMatched: true),
+                ScenarioStep(time: 0.1, key: nil, modifiers: [.control], expectedOutput: nil, expectedIsMatched: true, expectedState: .doubleTapLock),
+                ScenarioStep(time: 0.2, key: .t, modifiers: [.control.with(side: .right)], expectedOutput: .stopRecording, expectedIsMatched: false, expectedState: .idle),
+            ]
+        )
+    }
+
+    @Test
+    func singleTapLock_locksOnFirstRelease_modifierOnly() throws {
+        runScenario(
+            hotkey: HotKey(key: nil, modifiers: [.option]),
+            singleTapLockEnabled: true,
+            steps: [
+                ScenarioStep(time: 0.0, key: nil, modifiers: [.option], expectedOutput: .startRecording, expectedIsMatched: true),
+                ScenarioStep(time: 0.1, key: nil, modifiers: [], expectedOutput: nil, expectedIsMatched: true, expectedState: .doubleTapLock),
+                ScenarioStep(time: 0.2, key: nil, modifiers: [.option], expectedOutput: .stopRecording, expectedIsMatched: false, expectedState: .idle),
+            ]
+        )
+    }
+
     // Tests double-tap to lock recording
     @Test
     func doubleTapLock_startsRecordingOnDoubleTap_standard() throws {
@@ -639,6 +676,7 @@ struct ScenarioStep {
 func runScenario(
     hotkey: HotKey,
     useDoubleTapOnly: Bool = false,
+    singleTapLockEnabled: Bool = false,
     doubleTapLockEnabled: Bool = true,
     steps: [ScenarioStep]
 ) {
@@ -655,6 +693,7 @@ func runScenario(
         HotKeyProcessor(
             hotkey: hotkey,
             useDoubleTapOnly: useDoubleTapOnly,
+            singleTapLockEnabled: singleTapLockEnabled,
             doubleTapLockEnabled: doubleTapLockEnabled
         )
     }

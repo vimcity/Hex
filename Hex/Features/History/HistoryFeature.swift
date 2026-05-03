@@ -362,8 +362,8 @@ struct HistoryView: View {
             Text("Your transcription history will appear here.")
           }
         } else {
-          ScrollView {
-            LazyVStack(spacing: 12) {
+			ScrollView {
+			  LazyVStack(spacing: 12) {
               ForEach(store.transcriptionHistory.history) { transcript in
                 TranscriptView(
                   transcript: transcript,
@@ -373,10 +373,10 @@ struct HistoryView: View {
                   onDelete: { store.send(.deleteTranscript(transcript.id)) }
                 )
               }
-            }
-            .padding()
-          }
-          .toolbar {
+			  }
+			  .padding()
+			}
+			.toolbar {
             Button(role: .destructive, action: { showingDeleteConfirmation = true }) {
               Label("Delete All", systemImage: "trash")
             }
@@ -390,6 +390,6 @@ struct HistoryView: View {
             Text("Are you sure you want to delete all transcripts? This action cannot be undone.")
           }
         }
-      }.enableInjection()
+	  	}.enableInjection()
 	}
 }

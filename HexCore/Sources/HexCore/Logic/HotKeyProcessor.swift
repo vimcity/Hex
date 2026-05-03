@@ -98,6 +98,9 @@ public struct HotKeyProcessor {
     /// Only applies to key+modifier hotkeys; modifier-only always allows press-and-hold
     public var useDoubleTapOnly: Bool = false
 
+    /// If true, first release leaves recording locked until hotkey is pressed again.
+    public var singleTapLockEnabled: Bool = false
+
     /// If false, the quick double-tap lock gesture is disabled.
     /// Press-and-hold still works normally.
     public var doubleTapLockEnabled: Bool = true
@@ -139,11 +142,13 @@ public struct HotKeyProcessor {
     public init(
         hotkey: HotKey,
         useDoubleTapOnly: Bool = false,
+        singleTapLockEnabled: Bool = false,
         doubleTapLockEnabled: Bool = true,
         minimumKeyTime: TimeInterval = HexCoreConstants.defaultMinimumKeyTime
     ) {
         self.hotkey = hotkey
         self.useDoubleTapOnly = useDoubleTapOnly
+        self.singleTapLockEnabled = singleTapLockEnabled
         self.doubleTapLockEnabled = doubleTapLockEnabled
         self.minimumKeyTime = minimumKeyTime
     }
@@ -376,6 +381,12 @@ extension HotKeyProcessor {
         case let .pressAndHold(startTime):
             // If user truly "released" the chord => either normal stop or doubleTapLock
             if isReleaseForActiveHotkey(e) {
+                if singleTapLockEnabled {
+                    state = .doubleTapLock
+                    lastTapAt = nil
+                    return nil
+                }
+
                 // Check if this release is close to the prior release => double-tap lock
                 if doubleTapLockEnabled,
                    let prevReleaseTime = lastTapAt,

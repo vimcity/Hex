@@ -52,6 +52,18 @@ struct HotKeySectionView: View {
                 Image(systemName: "hand.tap")
             }
 
+            Label {
+                Toggle(
+                    "Lock on single tap",
+                    isOn: Binding(
+                        get: { store.hexSettings.singleTapLockEnabled },
+                        set: { store.send(.setSingleTapLockEnabled($0)) }
+                    )
+                )
+            } icon: {
+                Image(systemName: "lock")
+            }
+
             // Double-tap only mode applies to key+modifier combinations.
             if hotKey.key != nil {
                 Label {
@@ -62,7 +74,7 @@ struct HotKeySectionView: View {
                             set: { store.send(.setUseDoubleTapOnly($0)) }
                         )
                     )
-                        .disabled(!store.hexSettings.doubleTapLockEnabled)
+                        .disabled(!store.hexSettings.doubleTapLockEnabled || store.hexSettings.singleTapLockEnabled)
                 } icon: {
                     Image(systemName: "hand.tap.fill")
                 }

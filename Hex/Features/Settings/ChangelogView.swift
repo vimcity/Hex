@@ -7,11 +7,11 @@ struct ChangelogView: View {
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Changelog")
-                    .font(.title)
-                    .padding(.bottom, 10)
+		ScrollView {
+			VStack(alignment: .leading, spacing: 10) {
+				Text("Changelog")
+					.font(.title)
+					.padding(.bottom, 10)
 
                 if let changelogPath = Bundle.main.path(forResource: "changelog", ofType: "md"),
                     let changelogContent = try? String(
@@ -25,14 +25,14 @@ struct ChangelogView: View {
 
                 Spacer()
 
-                Button("Close") {
-                    dismiss()
-                }
-                .buttonStyle(.borderedProminent)
-                .padding(.top, 20)
-            }
-            .padding()
-        }
-        .enableInjection()
-    }
+				Button("Close") {
+					dismiss()
+				}
+				.buttonStyle(.borderedProminent)
+				.padding(.top, 20)
+			}
+			.padding()
+		}
+		.enableInjection()
+	}
 }

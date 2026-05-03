@@ -112,7 +112,8 @@ struct WordRemappingsView: View {
 				}
 			}
 			.padding(.vertical, 4)
-		} label: {
+		}
+		label: {
 			VStack(alignment: .leading, spacing: 4) {
 				Text("Word Removals")
 					.font(.headline)
@@ -147,7 +148,8 @@ struct WordRemappingsView: View {
 				}
 			}
 			.padding(.vertical, 4)
-		} label: {
+		}
+		label: {
 			VStack(alignment: .leading, spacing: 4) {
 				Text("Word Remappings")
 					.font(.headline)

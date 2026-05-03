@@ -53,7 +53,7 @@ struct TranscriptionIndicatorView: View {
     }
   }
 
-  private let cornerRadius: CGFloat = 8
+	private let cornerRadius: CGFloat = 8
   private let baseWidth: CGFloat = 16
   private let expandedWidth: CGFloat = 56
 
@@ -67,13 +67,13 @@ struct TranscriptionIndicatorView: View {
     let averagePower = min(1, meter.averagePower * 3)
     let peakPower = min(1, meter.peakPower * 3)
     ZStack {
-      Capsule()
-        .fill(backgroundColor.shadow(.inner(color: innerShadowColor, radius: 4)))
-        .overlay {
-          Capsule()
-            .stroke(strokeColor, lineWidth: 1)
-            .blendMode(.screen)
-        }
+		  Capsule()
+			.fill(backgroundColor.shadow(.inner(color: innerShadowColor, radius: 4)))
+			.overlay {
+			  Capsule()
+				.stroke(strokeColor, lineWidth: 1)
+				.blendMode(.screen)
+			}
         .overlay(alignment: .center) {
           RoundedRectangle(cornerRadius: cornerRadius)
             .fill(Color.red.opacity(status == .recording ? (averagePower < 0.1 ? averagePower / 0.1 : 1) : 0))
@@ -99,7 +99,7 @@ struct TranscriptionIndicatorView: View {
               .blendMode(.screen)
           }.padding(6)
         }
-        .cornerRadius(cornerRadius)
+			.cornerRadius(cornerRadius)
         .shadow(
           color: status == .recording ? .red.opacity(averagePower) : .red.opacity(0),
           radius: 4
@@ -130,16 +130,16 @@ struct TranscriptionIndicatorView: View {
       // Show tooltip when prewarming
       if status == .prewarming {
         VStack(spacing: 4) {
-          Text("Model prewarming...")
-            .font(.system(size: 12, weight: .medium))
-            .foregroundColor(.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-              RoundedRectangle(cornerRadius: 4)
-                .fill(Color.black.opacity(0.8))
-            )
-        }
+			  Text("Model prewarming...")
+				.font(.system(size: 12, weight: .medium))
+				.foregroundColor(.white)
+				.padding(.horizontal, 8)
+				.padding(.vertical, 4)
+				.background(
+				  RoundedRectangle(cornerRadius: 4)
+					.fill(Color.black.opacity(0.8))
+				)
+			}
         .offset(y: -24)
         .transition(.opacity)
         .zIndex(2)

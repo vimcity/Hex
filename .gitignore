@@ -1,4 +1,7 @@
 build/
+build-release/
+build-release-ui/
+build-release-revert-ui/
 updates/
 .vscode
 .DS_Store

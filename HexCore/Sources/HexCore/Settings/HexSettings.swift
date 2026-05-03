@@ -35,6 +35,7 @@ public struct HexSettings: Codable, Equatable, Sendable {
 	public var minimumKeyTime: Double
 	public var copyToClipboard: Bool
 	public var superFastModeEnabled: Bool
+	public var singleTapLockEnabled: Bool
 	public var useDoubleTapOnly: Bool
 	public var doubleTapLockEnabled: Bool
 	public var outputLanguage: String?
@@ -48,8 +49,12 @@ public struct HexSettings: Codable, Equatable, Sendable {
 	public var wordRemovals: [WordRemoval]
 	public var wordRemappings: [WordRemapping]
 
-	private mutating func normalizeDoubleTapSettings() {
+	private mutating func normalizeHotKeySettings() {
 		if !doubleTapLockEnabled {
+			useDoubleTapOnly = false
+		}
+
+		if singleTapLockEnabled {
 			useDoubleTapOnly = false
 		}
 	}
@@ -67,6 +72,7 @@ public struct HexSettings: Codable, Equatable, Sendable {
 		minimumKeyTime: Double = HexCoreConstants.defaultMinimumKeyTime,
 		copyToClipboard: Bool = false,
 		superFastModeEnabled: Bool = false,
+		singleTapLockEnabled: Bool = false,
 		useDoubleTapOnly: Bool = false,
 		doubleTapLockEnabled: Bool = true,
 		outputLanguage: String? = nil,
@@ -92,6 +98,7 @@ public struct HexSettings: Codable, Equatable, Sendable {
 		self.minimumKeyTime = minimumKeyTime
 		self.copyToClipboard = copyToClipboard
 		self.superFastModeEnabled = superFastModeEnabled
+		self.singleTapLockEnabled = singleTapLockEnabled
 		self.useDoubleTapOnly = useDoubleTapOnly
 		self.doubleTapLockEnabled = doubleTapLockEnabled
 		self.outputLanguage = outputLanguage
@@ -104,7 +111,7 @@ public struct HexSettings: Codable, Equatable, Sendable {
 		self.wordRemovalsEnabled = wordRemovalsEnabled
 		self.wordRemovals = wordRemovals
 		self.wordRemappings = wordRemappings
-		normalizeDoubleTapSettings()
+		normalizeHotKeySettings()
 	}
 
 	public init(from decoder: Decoder) throws {
@@ -113,7 +120,7 @@ public struct HexSettings: Codable, Equatable, Sendable {
 		for field in HexSettingsSchema.fields {
 			try field.decode(into: &self, from: container)
 		}
-		normalizeDoubleTapSettings()
+		normalizeHotKeySettings()
 	}
 
 	public func encode(to encoder: Encoder) throws {
@@ -140,6 +147,7 @@ private enum HexSettingKey: String, CodingKey, CaseIterable {
 	case minimumKeyTime
 	case copyToClipboard
 	case superFastModeEnabled
+	case singleTapLockEnabled
 	case useDoubleTapOnly
 	case doubleTapLockEnabled
 	case outputLanguage
@@ -237,6 +245,7 @@ private enum HexSettingsSchema {
 		SettingsField(.minimumKeyTime, keyPath: \.minimumKeyTime, default: defaults.minimumKeyTime).eraseToAny(),
 		SettingsField(.copyToClipboard, keyPath: \.copyToClipboard, default: defaults.copyToClipboard).eraseToAny(),
 		SettingsField(.superFastModeEnabled, keyPath: \.superFastModeEnabled, default: defaults.superFastModeEnabled).eraseToAny(),
+		SettingsField(.singleTapLockEnabled, keyPath: \.singleTapLockEnabled, default: defaults.singleTapLockEnabled).eraseToAny(),
 		SettingsField(.useDoubleTapOnly, keyPath: \.useDoubleTapOnly, default: defaults.useDoubleTapOnly).eraseToAny(),
 		SettingsField(.doubleTapLockEnabled, keyPath: \.doubleTapLockEnabled, default: defaults.doubleTapLockEnabled).eraseToAny(),
 		SettingsField(

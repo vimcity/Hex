@@ -176,6 +176,7 @@ private extension TranscriptionFeature {
         hotKeyProcessor.hotkey = hexSettings.hotkey
         let useDoubleTapOnly = hexSettings.doubleTapLockEnabled && hexSettings.useDoubleTapOnly
         hotKeyProcessor.doubleTapLockEnabled = hexSettings.doubleTapLockEnabled
+        hotKeyProcessor.singleTapLockEnabled = hexSettings.singleTapLockEnabled
         hotKeyProcessor.useDoubleTapOnly = useDoubleTapOnly
         hotKeyProcessor.minimumKeyTime = hexSettings.minimumKeyTime
 
@@ -218,7 +219,7 @@ private extension TranscriptionFeature {
             // If we detect repeated same chord, maybe intercept.
             if let pressedKey = keyEvent.key,
                pressedKey == hotKeyProcessor.hotkey.key,
-               keyEvent.modifiers == hotKeyProcessor.hotkey.modifiers
+               keyEvent.modifiers.matchesExactly(hotKeyProcessor.hotkey.modifiers)
             {
               return true
             }

@@ -10,7 +10,7 @@ struct AboutView: View {
     @State private var showingChangelog = false
 
     var body: some View {
-        Form {
+		Form {
             Section {
                 HStack {
                     Label("Version", systemImage: "info.circle")
@@ -46,8 +46,8 @@ struct AboutView: View {
                     Link("Become a Sponsor", destination: URL(string: "https://github.com/sponsors/kitlangton")!)
                 }
             }
-        }
-        .formStyle(.grouped)
-        .enableInjection()
-    }
+		}
+		.formStyle(.grouped)
+		.enableInjection()
+	}
 }

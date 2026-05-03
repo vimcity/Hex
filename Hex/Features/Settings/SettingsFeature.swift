@@ -78,6 +78,7 @@ struct SettingsFeature {
     case setUseClipboardPaste(Bool)
     case setCopyToClipboard(Bool)
     case setDoubleTapLockEnabled(Bool)
+    case setSingleTapLockEnabled(Bool)
     case setUseDoubleTapOnly(Bool)
     case setMinimumKeyTime(Double)
     case setOutputLanguage(String?)
@@ -223,8 +224,9 @@ struct SettingsFeature {
     Reduce { state, action in
       switch action {
       case .binding:
-        let didNormalizeDoubleTapOnly = !state.hexSettings.doubleTapLockEnabled && state.hexSettings.useDoubleTapOnly
-        if didNormalizeDoubleTapOnly {
+        let shouldNormalizeUseDoubleTapOnly = state.hexSettings.useDoubleTapOnly
+          && (!state.hexSettings.doubleTapLockEnabled || state.hexSettings.singleTapLockEnabled)
+        if shouldNormalizeUseDoubleTapOnly {
           state.$hexSettings.withLock {
             $0.useDoubleTapOnly = false
           }
@@ -480,9 +482,18 @@ struct SettingsFeature {
         }
         return .none
 
+      case let .setSingleTapLockEnabled(enabled):
+        state.$hexSettings.withLock {
+          $0.singleTapLockEnabled = enabled
+          if enabled {
+            $0.useDoubleTapOnly = false
+          }
+        }
+        return .none
+
       case let .setUseDoubleTapOnly(enabled):
         state.$hexSettings.withLock {
-          $0.useDoubleTapOnly = enabled && $0.doubleTapLockEnabled
+          $0.useDoubleTapOnly = enabled && $0.doubleTapLockEnabled && !$0.singleTapLockEnabled
         }
         return .none
 

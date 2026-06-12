@@ -479,23 +479,23 @@ struct HotKeyProcessorTests {
     
     // MARK: - Additional Coverage Tests
     
-    // Tests ESC cancellation from hold state
+    // Tests plain ESC is ignored from hold state
     @Test
-    func escape_cancelsFromHold() throws {
+    func escape_ignoredFromHold() throws {
         runScenario(
             hotkey: HotKey(key: .a, modifiers: [.command]),
             steps: [
                 // Start recording
                 ScenarioStep(time: 0.0, key: .a, modifiers: [.command], expectedOutput: .startRecording, expectedIsMatched: true),
-                // Press ESC
-                ScenarioStep(time: 0.5, key: .escape, modifiers: [], expectedOutput: .cancel, expectedIsMatched: false),
+                // Press ESC — ignored, recording continues
+                ScenarioStep(time: 0.5, key: .escape, modifiers: [], expectedOutput: nil, expectedIsMatched: true),
             ]
         )
     }
     
-    // Tests ESC cancellation from lock state
+    // Tests plain ESC is ignored from lock state (user may be in Vim etc.)
     @Test
-    func escape_cancelsFromLock() throws {
+    func escape_ignoredFromLock() throws {
         runScenario(
             hotkey: HotKey(key: nil, modifiers: [.option]),
             steps: [
@@ -506,13 +506,13 @@ struct HotKeyProcessorTests {
                 // Second tap (locks)
                 ScenarioStep(time: 0.2, key: nil, modifiers: [.option], expectedOutput: .startRecording, expectedIsMatched: true),
                 ScenarioStep(time: 0.3, key: nil, modifiers: [], expectedOutput: nil, expectedIsMatched: true),
-                // Now locked - press ESC
-                ScenarioStep(time: 1.0, key: .escape, modifiers: [], expectedOutput: .cancel, expectedIsMatched: false),
+                // ESC while locked — ignored, still recording
+                ScenarioStep(time: 1.0, key: .escape, modifiers: [], expectedOutput: nil, expectedIsMatched: true),
             ]
         )
     }
     
-    // Tests that ESC while holding hotkey doesn't restart recording (issue #36)
+    // Tests that plain ESC while holding hotkey is ignored (no cancel, no dirty state)
     @Test
     func escape_whileHoldingHotkey_doesNotRestart() throws {
         runScenario(
@@ -520,14 +520,40 @@ struct HotKeyProcessorTests {
             steps: [
                 // Start recording
                 ScenarioStep(time: 0.0, key: .a, modifiers: [.command], expectedOutput: .startRecording, expectedIsMatched: true),
-                // Press ESC while still holding hotkey
-                ScenarioStep(time: 0.5, key: .escape, modifiers: [.command], expectedOutput: .cancel, expectedIsMatched: false),
-                // Hotkey still held - should be ignored (dirty)
-                ScenarioStep(time: 0.6, key: .a, modifiers: [.command], expectedOutput: nil, expectedIsMatched: false),
-                // Full release
-                ScenarioStep(time: 0.7, key: nil, modifiers: [], expectedOutput: nil, expectedIsMatched: false),
+                // Press ESC while still holding hotkey — ignored
+                ScenarioStep(time: 0.5, key: .escape, modifiers: [.command], expectedOutput: nil, expectedIsMatched: true),
+                // Release hotkey normally
+                ScenarioStep(time: 0.7, key: nil, modifiers: [], expectedOutput: .stopRecording, expectedIsMatched: false),
                 // Now pressing hotkey should work again
                 ScenarioStep(time: 0.8, key: .a, modifiers: [.command], expectedOutput: .startRecording, expectedIsMatched: true),
+            ]
+        )
+    }
+
+    @Test
+    func controlEscape_cancelsFromHold() throws {
+        runScenario(
+            hotkey: HotKey(key: .t, modifiers: [.control]),
+            steps: [
+                ScenarioStep(time: 0.0, key: .t, modifiers: [.control], expectedOutput: .startRecording, expectedIsMatched: true),
+                ScenarioStep(time: 0.5, key: .escape, modifiers: [.control], expectedOutput: .cancel, expectedIsMatched: false),
+                ScenarioStep(time: 0.6, key: nil, modifiers: [], expectedOutput: nil, expectedIsMatched: false),
+                ScenarioStep(time: 0.7, key: .t, modifiers: [.control], expectedOutput: .startRecording, expectedIsMatched: true),
+            ]
+        )
+    }
+
+    @Test
+    func controlEscape_cancelsFromLock() throws {
+        runScenario(
+            hotkey: HotKey(key: .t, modifiers: [.control]),
+            singleTapLockEnabled: true,
+            steps: [
+                ScenarioStep(time: 0.0, key: .t, modifiers: [.control], expectedOutput: .startRecording, expectedIsMatched: true),
+                ScenarioStep(time: 0.1, key: nil, modifiers: [.control], expectedOutput: nil, expectedIsMatched: true, expectedState: .doubleTapLock),
+                ScenarioStep(time: 0.3, key: .escape, modifiers: [.control], expectedOutput: .cancel, expectedIsMatched: false, expectedState: .idle),
+                ScenarioStep(time: 0.4, key: nil, modifiers: [], expectedOutput: nil, expectedIsMatched: false, expectedState: .idle),
+                ScenarioStep(time: 0.5, key: .t, modifiers: [.control], expectedOutput: .startRecording, expectedIsMatched: true),
             ]
         )
     }

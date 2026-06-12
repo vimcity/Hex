@@ -28,7 +28,7 @@ private let hotKeyLogger = HexLog.hotKey
 /// A "tap" is a quick press-and-release sequence. The processor tracks release times:
 /// - First tap: Press hotkey → release → record release time
 /// - Second tap: If pressed within `doubleTapThreshold` (0.3s), enters `.doubleTapLock`
-/// - The lock persists until the user presses the hotkey again or presses ESC
+/// - The lock persists until the user presses the hotkey again or presses Ctrl+ESC
 ///
 /// # Press-and-Hold Behavior
 ///
@@ -45,7 +45,7 @@ private let hotKeyLogger = HexLog.hotKey
 /// - "Release" = any required modifier released
 /// - Uses higher minimum duration (0.3s) to prevent conflicts with OS shortcuts
 /// - Mouse clicks within threshold → silent discard (prevents Option+click conflicts)
-/// - After threshold, only ESC cancels (mouse clicks ignored)
+/// - After threshold, only Ctrl+ESC cancels (mouse clicks ignored)
 ///
 /// # Dirty State & Backsliding Prevention
 ///
@@ -54,9 +54,9 @@ private let hotKeyLogger = HexLog.hotKey
 /// - Prevents accidental re-triggering during complex key combinations
 /// - User cannot "backslide" into hotkey by releasing extra modifiers
 ///
-/// # ESC Key Handling
+/// # Cancel Key Handling
 ///
-/// Pressing ESC always cancels active recordings:
+/// Pressing Ctrl+ESC cancels active recordings:
 /// - Returns `.cancel` output (plays cancel sound)
 /// - Enters dirty state to prevent immediate re-triggering
 /// - Works in both `.pressAndHold` and `.doubleTapLock` states
@@ -171,25 +171,36 @@ public struct HotKeyProcessor {
     /// - Returns: An output action (.startRecording, .stopRecording, .cancel, .discard) or nil if no action needed
     ///
     /// # Event Processing Order
-    /// 1. ESC key → immediate cancellation
+    /// 1. Ctrl+ESC → immediate cancellation
     /// 2. Dirty state check → ignore input until full release
     /// 3. Matching chord → handle as hotkey press
     /// 4. Non-matching chord → handle as release or different key
     public mutating func process(keyEvent: KeyEvent) -> Output? {
-        // 1) ESC => immediate cancel
+        // 1) Ctrl+ESC => explicit cancel. Plain ESC stays ignored for Vim etc.
         if keyEvent.key == .escape {
+            if keyEvent.modifiers.matchesExactly([.control]) {
+                let currentState = state
+                hotKeyLogger.notice("Ctrl+ESC pressed while state=\(String(describing: currentState)) — canceling")
+                switch state {
+                case .idle:
+                    return nil
+                case .pressAndHold, .doubleTapLock:
+                    isDirty = true
+                    resetToIdle()
+                    return .cancel
+                }
+            }
+
             let currentState = state
-            hotKeyLogger.notice("ESC pressed while state=\(String(describing: currentState))")
-        }
-        if keyEvent.key == .escape, state != .idle {
-            isDirty = true
-            resetToIdle()
-            return .cancel
+            hotKeyLogger.notice("ESC pressed while state=\(String(describing: currentState)) — ignoring")
+            return nil
         }
 
-        // 2) If dirty, ignore until full release (nil, [])
+        // 2) If dirty, ignore until key is released and remaining modifiers are
+        //    a subset of the hotkey's required modifiers (so holding Ctrl while
+        //    transitioning from Ctrl+L → Ctrl+T doesn't stay dirty).
         if isDirty {
-            if chordIsFullyReleased(keyEvent) {
+            if chordIsFullyReleased(keyEvent) || chordIsReadyForHotkey(keyEvent) {
                 isDirty = false
             } else {
                 return nil
@@ -222,7 +233,7 @@ public struct HotKeyProcessor {
     /// # Behavior
     /// - Modifier-only hotkeys: Discard if within threshold, ignore after threshold
     /// - Key+modifier hotkeys: Always ignore (no conflict with mouse clicks)
-    /// - Double-tap lock: Always ignore (intentional recording, only ESC cancels)
+    /// - Double-tap lock: Always ignore (intentional recording, only Ctrl+ESC cancels)
     public mutating func processMouseClick() -> Output? {
         // Only cancel if:
         // 1. The hotkey is modifier-only (no key component)
@@ -241,7 +252,7 @@ public struct HotKeyProcessor {
             // (max of minimumKeyTime and 0.3s) to be consistent
             let effectiveMinimum = max(minimumKeyTime, RecordingDecisionEngine.modifierOnlyMinimumDuration)
             
-            // Only discard if within threshold - after threshold, ignore clicks (only ESC cancels)
+            // Only discard if within threshold - after threshold, ignore clicks (only Ctrl+ESC cancels)
             if elapsed < effectiveMinimum {
                 isDirty = true
                 resetToIdle()
@@ -251,7 +262,7 @@ public struct HotKeyProcessor {
                 return nil
             }
         case .doubleTapLock:
-            // Mouse click during double-tap lock => ignore (only ESC cancels locked recordings)
+            // Mouse click during double-tap lock => ignore (only Ctrl+ESC cancels locked recordings)
             return nil
         }
     }
@@ -281,7 +292,7 @@ public extension HotKeyProcessor {
         /// Stop the current recording and process audio
         case stopRecording
         
-        /// Explicit user cancellation via ESC key
+        /// Explicit user cancellation via Ctrl+ESC
         /// Plays cancel sound to provide feedback
         case cancel
         
@@ -349,7 +360,7 @@ extension HotKeyProcessor {
     ///
     /// **Modifier-only hotkeys:**
     /// - Within threshold (0.3s): Discard silently (accidental trigger, e.g., Option+click)
-    /// - After threshold: Ignore completely, keep recording (only ESC cancels)
+    /// - After threshold: Ignore completely, keep recording (only Ctrl+ESC cancels)
     ///
     /// **Key+modifier hotkeys:**
     /// - Within 1s: Stop recording (likely accidental)
@@ -415,7 +426,7 @@ extension HotKeyProcessor {
                         resetToIdle()
                         return .discard
                     } else {
-                        // After threshold => ignore extra modifiers/keys, keep recording (only ESC cancels)
+                        // After threshold => ignore extra modifiers/keys, keep recording (only Ctrl+ESC cancels)
                         return nil
                     }
                 } else {
@@ -493,6 +504,15 @@ extension HotKeyProcessor {
     /// - Returns: True if no keys or modifiers are pressed
     private func chordIsFullyReleased(_ e: KeyEvent) -> Bool {
         e.key == nil && e.modifiers.isEmpty
+    }
+
+    /// Checks if the keyboard is in a "clean" state relative to the hotkey —
+    /// no key pressed, and only hotkey modifiers (or fewer) held.
+    /// Used to exit dirty state while keeping modifier keys held (e.g. Ctrl held
+    /// between pressing Ctrl+L and then Ctrl+T).
+    private func chordIsReadyForHotkey(_ e: KeyEvent) -> Bool {
+        guard hotkey.key != nil else { return false } // modifier-only: require full release
+        return e.key == nil && e.modifiers.isSubset(of: hotkey.modifiers)
     }
 
     /// Detects if user has released the active hotkey.
